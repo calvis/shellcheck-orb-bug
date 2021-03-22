@@ -1,0 +1,43 @@
+version: 2.1
+
+orbs:
+  shellcheck: circleci/shellcheck@2.2.2
+
+jobs:
+  # This job fails correctly
+  shellcheck-from-scratch:
+    docker:
+      - image: koalaman/shellcheck-alpine:stable
+    steps:
+      - checkout
+      - run: shellcheck -e SC1071 scripts/bad-script
+
+  # This job succeeds incorrectly
+  shellcheck-orb-exclusion:
+    docker:
+      - image: alpine:latest
+    steps:
+      - checkout
+      - shellcheck/install
+      - shellcheck/check:
+          dir: scripts
+          pattern: "*"
+          exclude: SC1071
+
+  # This job fails correctly, because it does not contain the exclusion
+  shellcheck-orb:
+    docker:
+      - image: alpine:latest
+    steps:
+      - checkout
+      - shellcheck/install
+      - shellcheck/check:
+          dir: scripts
+          pattern: "*"
+
+workflows:
+  test:
+    jobs:
+      - shellcheck-orb
+      - shellcheck-orb-exclusion
+      - shellcheck-from-scratch
